@@ -1,0 +1,43 @@
+name: Deploy to GitHub Pages
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # Enable pnpm
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      # Install dependencies and build
+      - name: Install dependencies
+        run: pnpm install
+      - name: Build
+        env:
+          NUXT_APP_BASE_URL: /${{ github.event.repository.name }}/
+        run: pnpm run build --preset github_pages
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./.output/public
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github_pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
